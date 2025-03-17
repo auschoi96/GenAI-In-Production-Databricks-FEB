@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %pip install --upgrade --quiet lxml langchain databricks-vectorsearch cloudpickle databricks-sdk openai databricks_genai_inference pypdf llama_index dspy transformers langgraph==0.3.4 sqlalchemy openai mlflow mlflow[databricks] langchain_community databricks-agents databricks-langchain uv torch
+# MAGIC %pip install --upgrade --quiet databricks-sdk lxml langchain databricks-vectorsearch cloudpickle openai databricks_genai_inference pypdf llama_index dspy transformers langgraph==0.3.4 sqlalchemy openai mlflow mlflow[databricks] langchain_community databricks-agents databricks-langchain uv torch
 
 # COMMAND ----------
 
@@ -14,6 +14,7 @@ demo_schema = "demo_data_to_delete"
 volumeName = "ac_nov_rag_volume"
 folderName = "sample_pdf_folder"
 vectorSearchIndexName = "pdf_content_embeddings_index"
+# vectorSearchIndexName = "databricks_documentation_index"
 chunk_size = 500
 chunk_overlap = 50
 embeddings_endpoint = "databricks-gte-large-en"
