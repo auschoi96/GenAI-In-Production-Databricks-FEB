@@ -3,12 +3,12 @@
 
 # COMMAND ----------
 
-spark.sql(f"USE {catalog}.{dbName}")
-spark.sql(f"CREATE VOLUME IF NOT EXISTS {catalog}.{dbName}.{volumeName}")
+spark.sql(f"USE {catalog}.{demo_schema}")
+spark.sql(f"CREATE VOLUME IF NOT EXISTS {catalog}.{demo_schema}.{volumeName}")
 
 # COMMAND ----------
 
-volume_folder =  f"/Volumes/{catalog}/{dbName}/{volumeName}"
+volume_folder =  f"/Volumes/{catalog}/{demo_schema}/{volumeName}"
 
 # COMMAND ----------
 
@@ -165,7 +165,7 @@ def get_embedding(contents: pd.Series) -> pd.Series:
     .table('pdf_content_embeddings').awaitTermination())
 
 #Let's also add our documentation web page content
-if table_exists(f'{catalog}.{dbName}.databricks_documentation'):
+if table_exists(f'{catalog}.{demo_schema}.databricks_documentation'):
   (spark.readStream.table('databricks_documentation')
       .withColumn("content", F.explode(read_as_chunk("content"))) 
       .withColumn('embedding', get_embedding("content"))
@@ -194,9 +194,9 @@ from databricks.sdk import WorkspaceClient
 import databricks.sdk.service.catalog as c
 
 #The table we'd like to index
-source_table_fullname = f"{catalog}.{dbName}.pdf_content_embeddings"
+source_table_fullname = f"{catalog}.{demo_schema}.pdf_content_embeddings"
 # Where we want to store our index
-vs_index_fullname = f"{catalog}.{dbName}.{vectorSearchIndexName}"
+vs_index_fullname = f"{catalog}.{demo_schema}.{vectorSearchIndexName}"
 
 if not index_exists(vsc, VECTOR_SEARCH_ENDPOINT_NAME, vs_index_fullname):
   print(f"Creating index {vs_index_fullname} on endpoint {VECTOR_SEARCH_ENDPOINT_NAME}...")
@@ -217,4 +217,5 @@ else:
   vsc.get_index(VECTOR_SEARCH_ENDPOINT_NAME, vs_index_fullname).sync()
 
 # COMMAND ----------
+
 
