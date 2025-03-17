@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %pip install --upgrade lxml langchain databricks-vectorsearch cloudpickle databricks-sdk openai databricks_genai_inference pypdf llama_index
+# MAGIC %pip install --upgrade lxml langchain databricks-vectorsearch cloudpickle databricks-sdk openai databricks_genai_inference pypdf llama_index dspy
 # MAGIC %pip install --upgrade sqlalchemy openai mlflow mlflow[databricks] langchain_community databricks-agents databricks-langchain
 # MAGIC dbutils.library.restartPython()
 
@@ -16,7 +16,8 @@ vectorSearchIndexName = "pdf_content_embeddings_index"
 chunk_size = 500
 chunk_overlap = 50
 embeddings_endpoint = "databricks-gte-large-en"
-VECTOR_SEARCH_ENDPOINT_NAME = "one-env-shared-endpoint-4" 
+VECTOR_SEARCH_ENDPOINT_NAME = "one-env-shared-endpoint-4"
+# VECTOR_SEARCH_ENDPOINT_NAME = "delete-now"
 chatBotModel = "databricks-meta-llama-3-3-70b-instruct"
 max_tokens = 2000
 finalchatBotModelName = "ac_nov_rag_bot"
@@ -76,12 +77,4 @@ spark_df.write.format("delta").mode("overwrite").saveAsTable(f"{catalog}.{demo_s
 
 # COMMAND ----------
 
-df = pd.read_csv('./data/fs_travel.csv')
-spark_df = spark.createDataFrame(df)
-spark_df.write.format("delta").mode("overwrite").saveAsTable(f"{catalog}.{demo_schema}.fs_travel")
 
-# COMMAND ----------
-
-df = pd.read_csv('./data/destinations.csv')
-spark_df = spark.createDataFrame(df)
-spark_df.write.format("delta").mode("overwrite").saveAsTable(f"{catalog}.{demo_schema}.destinations")
