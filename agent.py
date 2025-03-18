@@ -8,7 +8,8 @@ from databricks_langchain import (
     VectorSearchRetrieverTool,
     DatabricksEmbeddings
 )
-
+from unitycatalog.ai.core.databricks import DatabricksFunctionClient
+from unitycatalog.ai.core.base import set_uc_function_client
 from langchain_core.language_models import LanguageModelLike
 from langchain_core.runnables import RunnableConfig, RunnableLambda
 from langchain_core.tools import BaseTool
@@ -51,6 +52,8 @@ tools = []
 # You can also add local LangChain python tools. See https://python.langchain.com/docs/concepts/tools
 
 # Add additional tools
+client = DatabricksFunctionClient()
+set_uc_function_client(client)
 uc_tool_names = [f"{catalog}.{agent_schema}.*"]
 uc_toolkit = UCFunctionToolkit(function_names=uc_tool_names)
 tools.extend(uc_toolkit.tools)
