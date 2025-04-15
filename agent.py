@@ -68,9 +68,7 @@ vector_search_tools = [
           index_name=f"{catalog}.{demo_schema}.{vectorSearchIndexName}",
           tool_name="databricks_docs_retriever",
           tool_description="Retrieves information about Databricks products from official Databricks documentation. This must be used",
-          columns=["id", "url", "content"],
-          embedding=DatabricksEmbeddings(endpoint=embeddings_endpoint),
-          text_column="content",
+          columns=["id", "url", "content"]
         )
 ]
 tools.extend(vector_search_tools)

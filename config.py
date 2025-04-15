@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %pip install --upgrade --quiet databricks-sdk lxml langchain databricks-vectorsearch cloudpickle openai pypdf llama_index langgraph==0.3.4 sqlalchemy openai mlflow mlflow[databricks] langchain_community databricks-agents databricks-langchain uv torch databricks-connect==16.1.*
+# MAGIC %pip install --upgrade --quiet databricks-sdk lxml langchain databricks-vectorsearch cloudpickle openai pypdf llama_index langgraph==0.3.4 sqlalchemy openai mlflow mlflow[databricks] langchain_community databricks-agents databricks-langchain uv torch databricks-connect==16.1.* markdownify ftfy
 
 # COMMAND ----------
 

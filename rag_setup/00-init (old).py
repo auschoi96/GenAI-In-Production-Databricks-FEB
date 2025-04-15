@@ -1,18 +1,10 @@
 # Databricks notebook source
-# MAGIC %md 
-# MAGIC # init notebook setting up the backend. 
-# MAGIC
-# MAGIC Do not edit the notebook, it contains import and helpers for the demo
-# MAGIC
-# MAGIC <!-- Collect usage data (view). Remove it to disable collection or disable tracker during installation. View README for more details.  -->
-# MAGIC <img width="1px" src="https://ppxrzfxige.execute-api.us-west-2.amazonaws.com/v1/analytics?category=data-science&org_id=1444828305810485&notebook=00-init&demo_name=chatbot-rag-llm&event=VIEW">
+# %run ../config
 
 # COMMAND ----------
 
-
 dbutils.widgets.text("reset_all_data", "false", "Reset Data")
 reset_all_data = dbutils.widgets.get("reset_all_data") == "true"
-DATABRICKS_SITEMAP_URL = "https://docs.databricks.com/en/doc-sitemap.xml"
 
 # COMMAND ----------
 
@@ -57,24 +49,6 @@ logging.getLogger('mlflow').setLevel(logging.ERROR)
 
 # COMMAND ----------
 
-#dbdemos__delete_this_cell
-#force the experiment to the field demos one. Required to launch as a batch
-def init_experiment_for_batch(demo_name, experiment_name):
-  #You can programatically get a PAT token with the following
-  from databricks.sdk import WorkspaceClient
-  w = WorkspaceClient()
-  xp_root_path = f"/Shared/dbdemos/experiments/{demo_name}"
-  try:
-    r = w.workspace.mkdirs(path=xp_root_path)
-  except Exception as e:
-    print(f"ERROR: couldn't create a folder for the experiment under {xp_root_path} - please create the folder manually or  skip this init (used for job only: {e})")
-    raise e
-  xp = f"{xp_root_path}/{experiment_name}"
-  print(f"Using common experiment under {xp}")
-  mlflow.set_experiment(xp)
-
-# COMMAND ----------
-
 if reset_all_data:
   print(f'clearing up db {demo_schema}')
   spark.sql(f"DROP DATABASE IF EXISTS `{demo_schema}` CASCADE")
@@ -86,7 +60,7 @@ def use_and_create_db(catalog, demo_schema, cloud_storage_path = None):
   spark.sql(f"USE CATALOG `{catalog}`")
   spark.sql(f"""create database if not exists `{demo_schema}` """)
 
-assert catalog not in ['hive_metastore', 'spark_catalog'], "Please use a UC schema"
+assert catalog not in ['hive_metastore', 'spark_catalog']
 #If the catalog is defined, we force it to the given value and throw exception if not.
 if len(catalog) > 0:
   current_catalog = spark.sql("select current_catalog()").collect()[0]['current_catalog()']
@@ -98,6 +72,12 @@ if len(catalog) > 0:
         spark.sql(f"ALTER CATALOG {catalog} OWNER TO `account users`")
   use_and_create_db(catalog, demo_schema)
 
+if catalog == 'dbdemos':
+  try:
+    spark.sql(f"GRANT CREATE, USAGE on DATABASE {catalog}.{demo_schema} TO `account users`")
+    spark.sql(f"ALTER SCHEMA {catalog}.{demo_schema} OWNER TO `account users`")
+  except Exception as e:
+    print("Couldn't grant access to the schema to all users:"+str(e))    
 
 print(f"using catalog.database `{catalog}`.`{demo_schema}`")
 spark.sql(f"""USE `{catalog}`.`{demo_schema}`""")    
@@ -111,9 +91,9 @@ if not spark.catalog.tableExists("databricks_documentation") or spark.table("dat
             url STRING,
             content STRING
           ) TBLPROPERTIES (delta.enableChangeDataFeed = true)''')
-  (spark.createDataFrame(pd.read_parquet('https://dbdemos-dataset.s3.amazonaws.com/llm/databricks-documentation/databricks_documentation.parquet'))
+  (spark.createDataFrame(pd.read_parquet('https://notebooks.databricks.com/demos/dbdemos-dataset/llm/databricks-documentation/databricks_documentation.parquet'))
    .drop('title').write.mode('overwrite').saveAsTable("databricks_documentation"))
-  (spark.createDataFrame(pd.read_parquet('https://dbdemos-dataset.s3.amazonaws.com/llm/databricks-documentation/databricks_doc_eval_set.parquet'))
+  (spark.createDataFrame(pd.read_parquet('https://notebooks.databricks.com/demos/dbdemos-dataset/llm/databricks-documentation/databricks_doc_eval_set.parquet'))
    .write.mode('overwrite').saveAsTable("eval_set_databricks_documentation"))
   #Make sure enableChangeDataFeed is enabled
   spark.sql('ALTER TABLE databricks_documentation SET TBLPROPERTIES (delta.enableChangeDataFeed = true)')
@@ -139,12 +119,6 @@ def display_txt_as_html(txt):
 #  created = w.ip_access_lists.create(label=f'serverless-model-serving',
 #                                    ip_addresses=['xxxx/32'],
 #                                    list_type=settings.ListType.ALLOW)
-
-# COMMAND ----------
-
-# MAGIC %md 
-# MAGIC
-# MAGIC ## Helpers to get catalog and index status:
 
 # COMMAND ----------
 
@@ -252,8 +226,11 @@ def wait_for_model_serving_endpoint_to_be_ready(ep_name):
 # COMMAND ----------
 
 import requests
+from bs4 import BeautifulSoup
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from pyspark.sql.types import StringType
+import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 #Add retries with backoff to avoid 429 while fetching the doc
@@ -264,11 +241,9 @@ retries = Retry(
 )
 
 def download_databricks_documentation_articles(max_documents=None):
-    import markdownify
-    from bs4 import BeautifulSoup
-    import xml.etree.ElementTree as ET
     # Fetch the XML content from sitemap
-    response = requests.get(DATABRICKS_SITEMAP_URL)
+    DATABRICKS_SITEMAP_URL = "https://docs.databricks.com/en/doc-sitemap.xml"
+    response = requests.get(DATABRICKS_SITEMAP_URL) 
     root = ET.fromstring(response.content)
 
     # Find all 'loc' elements (URLs) in the XML
@@ -305,12 +280,9 @@ def download_databricks_documentation_articles(max_documents=None):
         def extract_text(html_content):
             if html_content:
                 soup = BeautifulSoup(html_content, "html.parser")
-                article = soup.find("article")
-                if article:
-                    try:
-                        return markdownify.markdownify(article.prettify(), heading_style="ATX")
-                    except Exception as e:
-                        return None
+                article_div = soup.find("div", itemprop="articleBody")
+                if article_div:
+                    return str(article_div).strip()
             return None
 
         return html_contents.apply(extract_text)
@@ -321,24 +293,15 @@ def download_databricks_documentation_articles(max_documents=None):
 
     # Select and filter non-null results
     final_df = final_df.select("url", "text").filter("text IS NOT NULL")
+    if final_df.isEmpty():
+      raise Exception("Dataframe is empty, couldn't download Databricks documentation, please check sitemap status.")
 
     return final_df
-
-#doc = download_databricks_documentation_articles(100)
-#display(doc)
-#doc.write.mode('overwrite').saveAsTable('databricks_documentation')
 
 # COMMAND ----------
 
 def display_gradio_app(space_name = "databricks-demos-chatbot"):
     displayHTML(f'''<div style="margin: auto; width: 1000px"><iframe src="https://{space_name}.hf.space" frameborder="0" width="1000" height="950" style="margin: auto"></iframe></div>''')
-
-# COMMAND ----------
-
-#Display a better quota message 
-def display_quota_error(e, ep_name):
-  if "QUOTA_EXCEEDED" in str(e): 
-    displayHTML(f'<div style="background-color: #ffd5b8; border-radius: 15px; padding: 20px;"><h1>Error: Vector search Quota exceeded in endpoint {ep_name}</h1><p>Please select another endpoint in the ../config file (VECTOR_SEARCH_ENDPOINT_NAME="<your-endpoint-name>"), or <a href="/compute/vector-search" target="_blank">open the vector search compute page</a> to cleanup resources.</p></div>')
 
 # COMMAND ----------
 
@@ -360,3 +323,13 @@ def cleanup_demo(catalog, db, serving_endpoint_name, vs_index_fullname):
 def pprint(obj):
   import pprint
   pprint.pprint(obj, compact=True, indent=1, width=100)
+
+# COMMAND ----------
+
+#Temp workaround to test if a table exists in shared cluster mode in DBR 14.2 (see SASP-2467)
+def table_exists(table_name):
+    try:
+        spark.table(table_name).isEmpty()
+    except:
+        return False
+    return True

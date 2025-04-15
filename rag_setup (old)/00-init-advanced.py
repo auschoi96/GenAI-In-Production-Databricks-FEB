@@ -3,13 +3,11 @@
 
 # COMMAND ----------
 
-
 import requests
 import collections
 import os
  
 def download_file_from_git(dest, owner, repo, path):
-  
     def download_file(url, destination):
       local_filename = url.split('/')[-1]
       # NOTE the stream=True parameter below
@@ -29,10 +27,6 @@ def download_file_from_git(dest, owner, repo, path):
     from concurrent.futures import ThreadPoolExecutor
     files = requests.get(f'https://api.github.com/repos/{owner}/{repo}/contents{path}').json()
     files = [f['download_url'] for f in files if 'NOTICE' not in f['name']]
-    files = [f.replace(
-            "https://raw.githubusercontent.com/databricks-demos/dbdemos-dataset/main/",
-            "https://dbdemos-dataset.s3.amazonaws.com/"
-        ) for f in files]
     def download_to_dest(url):
          download_file(url, dest)
     with ThreadPoolExecutor(max_workers=10) as executor:
@@ -40,56 +34,11 @@ def download_file_from_git(dest, owner, repo, path):
 
 # COMMAND ----------
 
-# import requests
-# import collections
-# import os
- 
-# def download_file_from_git(dest, owner, repo, path):
-#     def download_file(url, destination):
-#       local_filename = url.split('/')[-1]
-#       # NOTE the stream=True parameter below
-#       with requests.get(url, stream=True) as r:
-#           r.raise_for_status()
-#           print('saving '+destination+'/'+local_filename)
-#           with open(destination+'/'+local_filename, 'wb') as f:
-#               for chunk in r.iter_content(chunk_size=8192): 
-#                   # If you have chunk encoded response uncomment if
-#                   # and set chunk_size parameter to None.
-#                   #if chunk: 
-#                   f.write(chunk)
-#       return local_filename
-
-#     if not os.path.exists(dest):
-#       os.makedirs(dest)
-#     from concurrent.futures import ThreadPoolExecutor
-#     files = requests.get(f'https://api.github.com/repos/{owner}/{repo}/contents{path}').json()
-#     files = [f['download_url'] for f in files if 'NOTICE' not in f['name']]
-#     def download_to_dest(url):
-#          download_file(url, dest)
-#     with ThreadPoolExecutor(max_workers=10) as executor:
-#         collections.deque(executor.map(download_to_dest, files))
-
-# COMMAND ----------
-
 def upload_pdfs_to_volume(volume_path):
-  try:
-    if len(dbutils.fs.ls(volume_path)) > 10:
-      print(f'Documents already available, skipping download (delete the volume folder {volume_path} to download them again)')
-      return
-  except:
-    pass
   download_file_from_git(volume_path, "databricks-demos", "dbdemos-dataset", "/llm/databricks-pdf-documentation")
 
 def upload_dataset_to_volume(volume_path):
   download_file_from_git(volume_path, "databricks-demos", "dbdemos-dataset", "/llm/databricks-documentation")
-
-# COMMAND ----------
-
-# def upload_pdfs_to_volume(volume_path):
-#   download_file_from_git(volume_path, "databricks-demos", "dbdemos-dataset", "/llm/databricks-pdf-documentation")
-
-# def upload_dataset_to_volume(volume_path):
-#   download_file_from_git(volume_path, "databricks-demos", "dbdemos-dataset", "/llm/databricks-documentation")
 
 # COMMAND ----------
 

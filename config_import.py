@@ -4,6 +4,7 @@ demo_schema = "demo_data"
 volumeName = "rag_volume"
 folderName = "sample_pdf_folder"
 vectorSearchIndexName = "pdf_content_embeddings_index"
+vectorSearchIndexName = "databricks_documentation_vs_index"
 # vectorSearchIndexName = "databricks_documentation_index"
 chunk_size = 1000
 chunk_overlap = 50
